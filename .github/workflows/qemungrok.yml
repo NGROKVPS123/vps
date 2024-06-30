@@ -1,0 +1,45 @@
+name: Ngrok - GZ Windows 
+
+on: 
+  workflow_dispatch:
+    inputs:
+      ngrok:
+        description: 'ngrok auth token'
+        required: true
+      link_gz:
+        description: 'dán link gz của ae vô đây'
+        required: true
+ 
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: chuẩn bị phần mềm
+        run: |
+                  sudo apt update -y
+                  sudo apt install wget curl -y
+                  wget -O ngrok.tgz https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz
+                  tar -zxvf ngrok.tgz
+                  ./ngrok config add-authtoken "${{ github.event.inputs.ngrok }}"
+                  ./ngrok http 8006 --region ap &>/dev/null 
+- name: cài qemu, win và khởi chạy
+  run: |
+                  cd /tmp
+                  apt update && apt install qemu-kvm -y
+                  qemu-img create -f raw 11.img 513G
+                  sudo chmod 666 /dev/kvm
+                  wget -O- --no-check-certificate http://drive.muavps.net/windows/windows11iot.gz | gunzip | dd of=/tmp/11.img
+                  echo "thành công kết nối bằng ngrok http 8006"
+                  qemu-system-x86_64 \
+                  -net nic -net user,hostfwd=tcp::3389-:3389 \
+                  -m 10G -smp cores=4 \
+                  -cpu max \
+                  -enable-kvm \
+                  -boot order=d \
+                  -drive file=11.img,format=raw,if=virtio \
+                  -device usb-ehci,id=usb,bus=pci.0,addr=0x4 \
+                  -device usb-tablet \
+                  -vnc :0 -vga virtio
+ 
+                
+                  
